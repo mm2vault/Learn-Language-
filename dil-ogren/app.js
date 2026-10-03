@@ -513,7 +513,7 @@ function openProfile(){
   const langsStarted = Object.keys(P.started||{}); updateAchievements();
   const stagesDone = Object.keys(P.done||{}).length;
   const defs=updateAchievements();
-  const achievementRows=defs.map(x=>`<div class="achievement ${P.achievements[x[0]]?"unlocked":""}"><span>${icon(x[1]==="xp"?"trophy":x[0]==="quiz5"?"brain":x[0]==="lang2"?"globe":"check","achievement-icon")}</span><b>${x[2]}</b><small>${x[3]}</small></div>`).join("");
+  const achievementRows=defs.map(x=>`<div class="achievement ${P.achievements[x[0]]?"unlocked":""}"><span>${icon(x[0]==="xp100"?"trophy":x[0]==="quiz5"?"brain":x[0]==="lang2"?"globe":"check","achievement-icon")}</span><b>${x[2]}</b><small>${x[3]}</small></div>`).join("");
   $("profileBody").innerHTML = `
     <div class="prof-card"><h3>Toplam XP</h3><p style="font-size:28px;font-weight:800;color:var(--blue)">${P.xp||0}</p></div>
     <div class="prof-card"><h3>Gün serisi</h3><p style="font-size:28px;font-weight:800">${P.streak||0}</p></div>
