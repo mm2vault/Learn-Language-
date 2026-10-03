@@ -21,7 +21,7 @@ function load() {
       ...raw,
       done: raw.done && typeof raw.done === "object" ? raw.done : {},
       exam: raw.exam && typeof raw.exam === "object" ? raw.exam : {},
-      started: raw.started && typeof raw.started === "object" ? raw.started : {}
+      started: raw.started && typeof raw.started === "object" ? raw.started : {}, quizStats: raw.quizStats && typeof raw.quizStats === "object" ? raw.quizStats : {}, achievements: raw.achievements && typeof raw.achievements === "object" ? raw.achievements : {}
     };
   } catch {
     localStorage.removeItem(KEY);
@@ -29,7 +29,7 @@ function load() {
   }
 }
 function base() {
-  return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {} };
+  return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {}, quizStats: {}, achievements: {} };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(P)); }
 let P = load();
