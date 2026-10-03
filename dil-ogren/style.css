@@ -302,3 +302,23 @@ html, body {
 .ui-icon{width:22px;height:22px;display:block;flex:0 0 auto;color:currentColor}.inline-icon{width:18px;height:18px;display:inline-block;vertical-align:-4px;margin-right:6px}.feature-icon img{width:30px;height:30px}.icon-pill{display:grid;place-items:center}.icon-pill img{width:20px;height:20px}.act .ic{color:var(--blue)}.act .ic .ui-icon{width:22px;height:22px}.result-icon{width:58px;height:58px;margin:0 auto;color:var(--blue)}.big{display:grid;place-items:center}.eyebrow img{width:14px;height:14px;margin-right:7px}.exam-card h3{display:flex;align-items:center}.ai-head b,.ai-message b{display:flex;align-items:center}button{touch-action:manipulation}button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:520px){#app{width:100%;max-width:none}.view{padding-left:14px;padding-right:14px}.hero{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}.stats-row{gap:6px}.stat-chip{padding:9px 5px}.search-wrap input{min-height:48px}.tab{min-height:42px}.lang-row{min-height:68px;padding:11px 12px}.act{min-height:68px;padding:13px}.q-text{font-size:20px}.opt{min-height:52px}.row2 .btn,.bottom-cta .btn{min-height:52px}.auth-panel{padding:12px}.auth-card{max-height:calc(100dvh - 24px);overflow:auto}.landing{padding-left:14px;padding-right:14px}.landing-hero h1{font-size:clamp(38px,12vw,48px)}.landing-cta .btn{width:100%;min-height:52px}.feature-card{padding:18px}.steps>div{padding:14px 0}}
 @media(min-width:521px){#app{max-width:620px}}
+
+/* Mobile auth modal fix */
+.auth-panel{z-index:1000;overflow:auto;-webkit-overflow-scrolling:touch}
+.auth-panel .auth-card{width:min(420px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow-y:auto;box-sizing:border-box;padding:24px 20px}
+.auth-close{width:44px;height:44px;display:grid;place-items:center;right:8px;top:8px;font-size:30px;line-height:1;padding:0}
+#authForm input{box-sizing:border-box;min-height:50px;font-size:16px}
+#authSubmit{min-height:50px}
+@media(max-width:520px){
+  .auth-panel{padding:12px;place-items:center}
+  .auth-panel .auth-card{width:100%;max-width:none;max-height:calc(100dvh - 24px);border-radius:20px;padding:22px 16px 18px}
+  .auth-panel .auth-logo{font-size:30px;padding-right:38px}
+  .auth-panel .muted{font-size:13px;line-height:1.45}
+  .auth-tabs{margin:16px 0 12px;gap:6px}
+  .auth-tab{min-height:46px;padding:10px 8px}
+  #authForm{gap:9px}
+  #authForm input{min-height:52px;padding:13px 14px}
+  #authSubmit{min-height:52px}
+  .auth-error{font-size:12px;line-height:1.4}
+  .auth-panel .tiny{font-size:10px;line-height:1.4}
+}
