@@ -24,7 +24,7 @@ function load() {
       ...raw,
       done: raw.done && typeof raw.done === "object" ? raw.done : {},
       exam: raw.exam && typeof raw.exam === "object" ? raw.exam : {},
-      started: raw.started && typeof raw.started === "object" ? raw.started : {}, quizStats: raw.quizStats && typeof raw.quizStats === "object" ? raw.quizStats : {}, achievements: raw.achievements && typeof raw.achievements === "object" ? raw.achievements : {}
+      started: raw.started && typeof raw.started === "object" ? raw.started : {}, quizStats: raw.quizStats && typeof raw.quizStats === "object" ? raw.quizStats : {}, achievements: raw.achievements && typeof raw.achievements === "object" ? raw.achievements : {}, activities: raw.activities && typeof raw.activities === "object" ? raw.activities : {}, plans: raw.plans && typeof raw.plans === "object" ? raw.plans : {}, theme: typeof raw.theme === "string" ? raw.theme : "default"
     };
   } catch {
     localStorage.removeItem(KEY);
@@ -32,7 +32,7 @@ function load() {
   }
 }
 function base() {
-  return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {}, quizStats: {}, achievements: {} };
+  return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {}, quizStats: {}, achievements: {}, activities: {}, plans: {}, theme: "default" };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(P)); if (window.DilYolFirebase && window.DilYolFirebase.user) { clearTimeout(window.__dlySaveTimer); window.__dlySaveTimer=setTimeout(()=>window.DilYolFirebase.save(P).catch(console.error),450); } }
 let P = load();
@@ -235,12 +235,28 @@ function runAct(act){
   if (act === "exam") startExam();
 }
 
+function markActivity(type,data={}){
+  if(!S.langId||!S.stageId) return;
+  P.activities=P.activities||{};
+  const key=stageKey(S.langId,S.stageId);
+  P.activities[key]=P.activities[key]||{};
+  P.activities[key][type]={done:true,at:Date.now(),...data};
+  save();
+  maybeCompleteStage();
+}
+function activityStatus(){
+  const a=(P.activities||{})[stageKey(S.langId,S.stageId)]||{};
+  return {words:!!a.words,flash:!!a.flash,phrases:!!a.phrases,quiz:!!a.quiz};
+}
+function stageReady(){const a=activityStatus();return a.words&&a.flash&&a.phrases&&a.quiz;}
+function getStagePlan(){return (P.plans||{})[stageKey(S.langId,S.stageId)]||null;}
 function showWords(c){
   $("lessonTitle").textContent = "Kelimeler";
   $("lessonBody").innerHTML = `<div class="word-grid">${c.words.map(w =>
     `<div class="word-cell"><b>${w[0]}</b><span>${w[1]}</span></div>`
   ).join("")}</div>`;
   S.mode = "words";
+  markActivity("words");
   show("lesson");
 }
 
@@ -250,6 +266,7 @@ function showPhrases(c){
     `<div class="phrase"><div class="tg">${p[0]}</div><div class="nt">${p[1]}</div></div>`
   ).join("") + (c.lesson ? `<div class="phrase"><div class="note">${c.lesson}</div></div>` : "");
   S.mode = "phrases";
+  markActivity("phrases");
   show("lesson");
 }
 
@@ -278,8 +295,8 @@ function finishFlash(){
   touchStreak();
   const xp = 12 + S.flash.known * 2;
   addXp(xp);
-  maybeCompleteStage();
-  result("cards","Kartlar bitti", S.flash.known+" kelime pekişti", xp);
+  markActivity("flash",{known:S.flash.known,total:S.flash.list.length});
+  result("cards","Kartlar bitti", S.flash.known+" / "+S.flash.list.length+" kelime pekişti", xp);
 }
 
 /* Quiz / Exam — çift yön + cümle soruları */
@@ -404,7 +421,7 @@ function finishQuiz(){
   // Sınavda %70+, quizde %60+ etap sayılır
   P.quizStats=P.quizStats||{}; P.quizStats[stageKey(S.langId,S.stageId||"exam")]={score:s,total:t,at:Date.now()}; updateAchievements(); save();
   const passLine = S.quiz.exam ? 0.7 : 0.6;
-  if (ratio >= passLine) maybeCompleteStage();
+  if (ratio >= passLine) markActivity("quiz",{score:s,total:t});
   let title = S.quiz.exam ? "Sınav bitti" : "Quiz bitti";
   let extra = s + "/" + t + " doğru";
   if (S.quiz.exam) extra += ratio >= 0.7 ? " · Geçtin ✓" : " · Tekrar dene";
@@ -414,10 +431,11 @@ function finishQuiz(){
 
 function updateAchievements(){const d=Object.keys(P.done||{}).length,q=Object.keys(P.quizStats||{}).length,defs=[["first","🌱","İlk ders","İlk etabı tamamla",d>=1],["xp100","⭐","100 XP","100 XP kazan",P.xp>=100],["quiz5","🧠","Quizci","5 quiz",q>=5],["streak7","🔥","7 günlük seri","7 gün seri",P.streak>=7],["lang2","🌍","Dil gezgini","2 dil",Object.keys(P.started||{}).length>=2]];defs.forEach(x=>{if(x[4])P.achievements[x[0]]=true;});return defs;}
 function maybeCompleteStage(){
-  if (!S.langId || !S.stageId) return;
-  P.done = P.done || {};
-  P.done[stageKey(S.langId, S.stageId)] = true;
+  if (!S.langId || !S.stageId || !stageReady()) return false;
+  P.done=P.done||{};
+  P.done[stageKey(S.langId,S.stageId)]=true;
   save();
+  return true;
 }
 
 function result(iconName, title, text, xp){
@@ -499,7 +517,7 @@ function closeAi(){
 async function askAi(){
   const input=$("aiInput"), send=$("aiSend"), v=input.value.trim(); if(!v) return;
   input.value=""; S.aiHistory.push({role:"user",content:v}); appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
-  const payload={message:v,history:S.aiHistory.slice(0,-1).slice(-9),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}};
+  const payload={message:v,history:S.aiHistory.slice(0,-1).slice(-9),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,activities:P.activities,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started,currentPlan:getStagePlan(),theme:P.theme}};
   try{
     let r;
     try{
@@ -509,7 +527,9 @@ async function askAi(){
     }
     const d=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(d.error||("AI sunucusu hata verdi ("+r.status+")."));
-    const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); S.aiHistory.push({role:"assistant",content:reply}); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
+    const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?");
+    if(d.plan&&typeof d.plan==="object"&&S.langId&&S.stageId){P.plans=P.plans||{};P.plans[stageKey(S.langId,S.stageId)]=d.plan;save();}
+    if(d.theme&&typeof d.theme==="string"){P.theme=d.theme.slice(0,32);document.documentElement.dataset.aiTheme=P.theme;save();} S.aiHistory.push({role:"assistant",content:reply}); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
     setAiState(d.mood==="happy"?"happy":d.mood==="concern"?"concern":"speaking",d.mood==="happy"?"Harika!":d.mood==="concern"?"Birlikte düzeltiyoruz.":"Konuşuyor…"); speakAi(reply);
   }catch(err){
     const message=err?.name==="AbortError"?"AI yanıtı zaman aşımına uğradı.":(err?.message||"Sunucuya ulaşılamadı.");
