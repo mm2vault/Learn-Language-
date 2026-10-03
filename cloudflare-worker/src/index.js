@@ -24,6 +24,46 @@ function moodFor(text) {
   return "neutral";
 }
 
+function extractText(data) {
+  if (typeof data?.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
+
+  const steps = Array.isArray(data?.steps) ? data.steps : [];
+  const stepText = steps
+    .filter(step => step?.type === "model_output")
+    .flatMap(step => Array.isArray(step?.content) ? step.content : [])
+    .filter(item => item?.type === "text")
+    .map(item => item?.text || "")
+    .join("");
+
+  if (stepText.trim()) return stepText.trim();
+
+  const outputs = Array.isArray(data?.outputs) ? data.outputs : [];
+  return outputs
+    .filter(x => x?.type === "text")
+    .map(x => x?.text || "")
+    .join("")
+    .trim();
+}
+
+async function callGemini(model, prompt, apiKey) {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-goog-api-key":apiKey
+    },
+    body:JSON.stringify({
+      model,
+      input:prompt,
+      store:false,
+      generation_config:{max_output_tokens:500}
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  return {response, data};
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response(null, {status:204, headers:cors()});
@@ -32,6 +72,7 @@ export default {
       return json({
         ok: true,
         aiConfigured: Boolean(env.GEMINI_API_KEY),
+        model: env.GEMINI_MODEL || "gemini-3.8-flash",
         message: env.GEMINI_API_KEY ? "Gemini Worker hazır." : "GEMINI_API_KEY secret eksik."
       });
     }
@@ -73,27 +114,35 @@ export default {
         message
       ].join("\n");
 
-      const model = env.GEMINI_MODEL || "gemini-3.8-flash";
-      const endpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
-      const response = await fetch(endpoint, {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "x-goog-api-key":env.GEMINI_API_KEY
-        },
-        body:JSON.stringify({
-          model,
-          input:prompt,
-          store:false,
-          generation_config:{temperature:0.3,max_output_tokens:500}
-        })
-      });
+      const preferred = env.GEMINI_MODEL || "gemini-3.8-flash";
+      const fallbackModels = ["gemini-3.7-flash", "gemini-3.6-flash"];
+      const models = [preferred, ...fallbackModels].filter((model, index, all) => model && all.indexOf(model) === index);
 
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) return json({error:data?.error?.message || "Gemini isteği başarısız."},response.status);
+      let lastData = null;
+      let lastStatus = 503;
 
-      const reply = data?.output_text || data?.outputs?.filter(x => x?.type === "text")?.map(x => x.text || "").join("") || "AI yanıt üretmedi.";
-      return json({reply,mood:moodFor(reply)});
+      for (const model of models) {
+        const {response, data} = await callGemini(model, prompt, env.GEMINI_API_KEY);
+        lastData = data;
+        lastStatus = response.status;
+
+        if (response.ok) {
+          const reply = extractText(data);
+          if (reply) return json({reply, mood:moodFor(reply), model});
+          return json({error:"Gemini yanıt verdi ama metin üretmedi."},502);
+        }
+
+        // Temporary capacity/rate-limit errors are retried with the next model.
+        if (![429,500,502,503,504].includes(response.status)) {
+          return json({error:data?.error?.message || "Gemini isteği başarısız."},response.status);
+        }
+      }
+
+      const upstreamError = lastData?.error?.message || "Gemini şu anda yoğun.";
+      return json({
+        error:"AI modelleri şu anda yoğun. Birkaç saniye sonra tekrar dene.",
+        detail:upstreamError
+      }, lastStatus >= 500 ? 503 : lastStatus);
     } catch (error) {
       return json({error:"AI isteği işlenemedi."},500);
     }
