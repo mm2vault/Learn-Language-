@@ -1,5 +1,4 @@
 export default async (req) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: cors() });
   if (req.method !== "POST") return json({ error: "POST gerekli." }, 405);
   const token = Netlify.env.get("HF_TOKEN");
   if (!token) return json({ error: "HF_TOKEN ayarlanmamış." }, 500);
@@ -20,23 +19,25 @@ export default async (req) => {
     ].join("\n");
     const r = await fetch("https://router.huggingface.co/v1/chat/completions", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      headers: {"Authorization":"Bearer "+token,"Content-Type":"application/json"},
       body: JSON.stringify({
         model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: "İlerleme verisi:\n" + JSON.stringify(progress) + "\n\nKullanıcı isteği:\n" + message }
+        messages:[
+          {role:"system",content:system},
+          {role:"user",content:"İlerleme verisi:\n"+JSON.stringify(progress)+"\n\nKullanıcı isteği:\n"+message}
         ],
-        max_tokens: 500,
-        temperature: 0.3
+        max_tokens:500,
+        temperature:0.3
       })
     });
     const data = await r.json();
-    if (!r.ok) return json({ error: data?.error || "Hugging Face isteği başarısız." }, r.status);
-    return json({ reply: data?.choices?.[0]?.message?.content || "AI yanıt üretmedi." }, 200);
-  } catch (e) {
-    return json({ error: "AI isteği işlenemedi." }, 500);
+    if (!r.ok) return json({error:data?.error||"Hugging Face isteği başarısız."},r.status);
+    return json({reply:data?.choices?.[0]?.message?.content||"AI yanıt üretmedi."},200);
+  } catch {
+    return json({error:"AI isteği işlenemedi."},500);
   }
 };
-function cors(){return {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST,OPTIONS"};}
-function json(data,status){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json",...cors()}});}
+export const config = { path: "/api/ai" };
+function json(data,status){
+  return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json"}});
+}
