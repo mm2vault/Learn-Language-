@@ -499,14 +499,23 @@ function closeAi(){
 async function askAi(){
   const input=$("aiInput"), send=$("aiSend"), v=input.value.trim(); if(!v) return;
   input.value=""; S.aiHistory.push({role:"user",content:v}); appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
+  const payload={message:v,history:S.aiHistory.slice(0,-1).slice(-9),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}};
   try{
-    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,history:S.aiHistory.slice(0,-1).slice(-9),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
-    const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||"AI isteği başarısız.");
+    let r;
+    try{
+      r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload},signal:AbortSignal.timeout(18000)});
+    }catch(firstErr){
+      r=await fetch("https://learn-language-y6sj.netlify.app/.netlify/functions/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(18000)});
+    }
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||("AI sunucusu hata verdi ("+r.status+")."));
     const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); S.aiHistory.push({role:"assistant",content:reply}); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
     setAiState(d.mood==="happy"?"happy":d.mood==="concern"?"concern":"speaking",d.mood==="happy"?"Harika!":d.mood==="concern"?"Birlikte düzeltiyoruz.":"Konuşuyor…"); speakAi(reply);
   }catch(err){
-    const message=err?.message||"AI isteği sırasında bir hata oluştu."; appendAiMessage("AI bağlantısı şu an yanıt vermedi. "+message,"bot");
-    $("aiSpeech").textContent="Bağlantıda bir sorun oldu. Tekrar deneyebiliriz."; setAiState("concern","Bağlantı sorunu");
+    const message=err?.name==="AbortError"?"AI yanıtı zaman aşımına uğradı.":(err?.message||"Sunucuya ulaşılamadı.");
+    S.aiHistory.pop();
+    appendAiMessage("AI şu an bağlanamadı. "+message+" Netlify AI ayarını kontrol et.","bot");
+    $("aiSpeech").textContent="AI bağlantısı kontrol edilmeli."; setAiState("concern","Bağlantı sorunu");
   }finally{ send.disabled=false; }
 }
 function openProfile(){
