@@ -667,4 +667,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if(window.DilYolFirebase && window.DilYolFirebase.ready) boot();
   else window.addEventListener("dilyol-auth-ready",boot,{once:true});
   window.addEventListener("dilyol-auth-signed-out",()=>{$("authGate").classList.remove("hidden");});
+  setTimeout(()=>{
+    if(!window.DilYolFirebase?.ready && $("authError")){
+      $("authError").textContent="Firebase bağlantısı başlatılamadı. Sayfayı yenile ve Firebase ayarlarını kontrol et.";
+    }
+  },8000);
 });
