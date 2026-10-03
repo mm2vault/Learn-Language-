@@ -49,11 +49,15 @@
       </div>
     </div>
   </div>
-  <div id="aiModal" class="ai-modal hidden">
+  <div id="aiModal" class="ai-modal hidden" aria-hidden="true">
     <div class="ai-card">
-      <div class="ai-head"><div><b><img class="inline-icon" src="assets/icons/robot.svg" alt=""> AI Öğretmen</b><small id="aiStatus">İlerlemeni analiz ediyor…</small></div><button id="aiClose" class="back" type="button">×</button></div>
+      <div class="ai-head">
+        <div><b><img class="inline-icon" src="assets/icons/robot.svg" alt=""> AI Öğretmen</b><small id="aiStatus">Hazırım.</small></div>
+        <div class="ai-head-actions"><button id="aiVoiceToggle" class="ai-voice" type="button" aria-pressed="true">Ses açık</button><button id="aiClose" class="back" type="button" aria-label="AI öğretmeni kapat">×</button></div>
+      </div>
+      <div class="ai-teacher-row"><div id="aiAvatar" class="ai-avatar ai-idle"><img src="assets/ai/mascot.svg" alt="DilYol AI öğretmeni"></div><div id="aiSpeech" class="ai-speech">Merhaba! Ben DilYol AI öğretmenin. Birlikte çalışabiliriz.</div></div>
       <div id="aiBody" class="ai-body"></div>
-      <div class="ai-input-row"><input id="aiInput" placeholder="Örn. Bu cümleyi düzelt: I goed school" /><button id="aiSend" class="btn primary" type="button">Gönder</button></div>
+      <div class="ai-input-row"><input id="aiInput" placeholder="Örn. Bu cümleyi düzelt: I goed school" autocomplete="off" /><button id="aiSend" class="btn primary" type="button">Gönder</button></div>
     </div>
   </div>
   <div id="app">
@@ -80,7 +84,7 @@
       </header>
       <div id="continueCard" class="continue-card"></div>
       <div class="ai-recommend" id="aiRecommend">
-        <div><span class="ai-badge">🤖 AI</span><h3 id="aiRecTitle">Sana özel ders hazırlanıyor</h3><p id="aiRecText">Quiz sonuçlarına göre sıradaki adımı belirleyeceğiz.</p></div>
+        <div class="ai-mini-wrap"><div id="aiMiniAvatar" class="ai-avatar ai-mini-avatar ai-idle"><img src="assets/ai/mascot.svg" alt="" aria-hidden="true"></div><div><span class="ai-badge"><img src="assets/icons/robot.svg" alt=""> AI</span><h3 id="aiRecTitle">Sana özel ders hazırlanıyor</h3><p id="aiRecText">Quiz sonuçlarına göre sıradaki adımı belirleyeceğiz.</p></div></div>
         <button id="aiOpen" class="btn primary" type="button">AI Öğretmen</button>
       </div>
 
