@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>DilYol — 50+ Dil Öğren</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- HOME -->
+    <section id="v-home" class="view active">
+      <header class="hero">
+        <div class="hero-top">
+          <div>
+            <p class="muted tiny">Hoş geldin</p>
+            <h1 class="logo">DilYol</h1>
+          </div>
+          <button class="icon-pill" id="btnProfile" type="button">👤</button>
+        </div>
+        <div class="stats-row">
+          <div class="stat-chip"><span id="hStreak">0</span><small>gün seri</small></div>
+          <div class="stat-chip accent"><span id="hXp">0</span><small>XP</small></div>
+          <div class="stat-chip"><span id="hLangs">0</span><small>dil</small></div>
+        </div>
+        <div class="goal-bar">
+          <div class="goal-label"><span>Günlük hedef</span><span id="goalText">0/50 XP</span></div>
+          <div class="bar"><i id="goalFill"></i></div>
+        </div>
+      </header>
+
+      <div class="search-wrap">
+        <input type="search" id="langSearch" placeholder="Dil ara (50+ dil)…" autocomplete="off" />
+      </div>
+
+      <div class="tabs" id="regionTabs">
+        <button class="tab on" data-region="all">Tümü</button>
+        <button class="tab" data-region="europe">Avrupa</button>
+        <button class="tab" data-region="asia">Asya</button>
+        <button class="tab" data-region="mideast">Ortadoğu</button>
+        <button class="tab" data-region="other">Diğer</button>
+      </div>
+
+      <div class="lang-list" id="langList"></div>
+    </section>
+
+    <!-- PATH (stages) -->
+    <section id="v-path" class="view">
+      <header class="nav">
+        <button class="back" data-go="home" type="button">←</button>
+        <div class="nav-center">
+          <h2 id="pathTitle">Dil</h2>
+          <p class="muted tiny" id="pathSub">Etaplı öğrenme yolu</p>
+        </div>
+        <button class="back ghost" id="btnExamList" type="button">📝</button>
+      </header>
+      <div class="path-progress">
+        <div class="bar"><i id="pathFill"></i></div>
+        <span id="pathPct">0%</span>
+      </div>
+      <div class="path" id="pathNodes"></div>
+    </section>
+
+    <!-- STAGE DETAIL -->
+    <section id="v-stage" class="view">
+      <header class="nav">
+        <button class="back" data-go="path" type="button">←</button>
+        <div class="nav-center"><h2 id="stageTitle">Etap</h2></div>
+        <span class="nav-spacer"></span>
+      </header>
+      <div class="stage-hero" id="stageHero"></div>
+      <div class="action-grid" id="stageActions"></div>
+    </section>
+
+    <!-- FLASH -->
+    <section id="v-flash" class="view">
+      <header class="nav">
+        <button class="back" id="flashBack" type="button">←</button>
+        <div class="nav-center"><h2>Kartlar</h2></div>
+        <span class="counter" id="flashCount">1/10</span>
+      </header>
+      <div class="flash-wrap">
+        <div class="card3d" id="flashCard">
+          <div class="face front" id="fFront">—</div>
+          <div class="face back hidden" id="fBack">—</div>
+          <p class="hint">Çevirmek için dokun</p>
+        </div>
+        <div class="row2">
+          <button class="btn soft" id="fAgain" type="button">Tekrar</button>
+          <button class="btn primary" id="fKnow" type="button">Biliyorum ✓</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ / EXAM -->
+    <section id="v-quiz" class="view">
+      <header class="nav">
+        <button class="back" id="quizBack" type="button">←</button>
+        <div class="nav-center"><h2 id="quizTitle">Quiz</h2></div>
+        <span class="counter" id="quizCount">1/10</span>
+      </header>
+      <div class="quiz-wrap">
+        <div class="bar slim"><i id="quizFill"></i></div>
+        <p class="q-text" id="qText">?</p>
+        <div class="opts" id="qOpts"></div>
+        <p class="feedback" id="qFeed"></p>
+      </div>
+    </section>
+
+    <!-- PHRASES / LESSON -->
+    <section id="v-lesson" class="view">
+      <header class="nav">
+        <button class="back" id="lessonBack" type="button">←</button>
+        <div class="nav-center"><h2 id="lessonTitle">Ders</h2></div>
+        <span class="nav-spacer"></span>
+      </header>
+      <div class="lesson-body" id="lessonBody"></div>
+      <div class="bottom-cta">
+        <button class="btn primary block" id="lessonDone" type="button">Tamamla · +XP</button>
+      </div>
+    </section>
+
+    <!-- EXAMS LIST -->
+    <section id="v-exams" class="view">
+      <header class="nav">
+        <button class="back" data-go="path" type="button">←</button>
+        <div class="nav-center"><h2>Sınavlar</h2></div>
+        <span class="nav-spacer"></span>
+      </header>
+      <div class="exam-list" id="examList"></div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="v-profile" class="view">
+      <header class="nav">
+        <button class="back" data-go="home" type="button">←</button>
+        <div class="nav-center"><h2>Profil & İlerleme</h2></div>
+        <span class="nav-spacer"></span>
+      </header>
+      <div id="profileBody"></div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="v-result" class="view">
+      <div class="result">
+        <div class="big" id="rEmoji">🎉</div>
+        <h2 id="rTitle">Harika</h2>
+        <p id="rText">—</p>
+        <p class="xp-gain" id="rXp">+0 XP</p>
+        <button class="btn primary block" id="rOk" type="button">Devam</button>
+      </div>
+    </section>
+
+  </div>
+  <script src="languages.js"></script>
+  <script src="content.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
