@@ -64,6 +64,7 @@ function addXp(n) {
 }
 
 function $(id){ return document.getElementById(id); }
+function icon(name, cls=""){ return '<img class="ui-icon '+cls+'" src="assets/icons/'+name+'.svg" alt="" aria-hidden="true">'; }
 function show(v){
   document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
   const el = $("v-"+v);
@@ -200,13 +201,13 @@ function openStage(){
   $("stageHero").innerHTML = `<h3>${st.title}</h3><p>${st.desc}</p><p style="margin-top:8px">${content.lesson||""}</p>`;
 
   const acts = [
-    { id:"words", ic:"📖", t:"Kelime listesi", s: content.words.length + " kelime" },
-    { id:"flash", ic:"🃏", t:"Kartlar", s:"Çevirmeli pratik" },
-    { id:"phrases", ic:"💬", t:"Cümleler & diyalog", s: content.phrases.length + " kalıp" },
-    { id:"quiz", ic:"✅", t:"Etap quizi", s:"10 soruya kadar" },
+    { id:"words", ic:icon("book"), t:"Kelime listesi", s: content.words.length + " kelime" },
+    { id:"flash", ic:icon("cards"), t:"Kartlar", s:"Çevirmeli pratik" },
+    { id:"phrases", ic:icon("chat"), t:"Cümleler & diyalog", s: content.phrases.length + " kalıp" },
+    { id:"quiz", ic:icon("check"), t:"Etap quizi", s:"10 soruya kadar" },
   ];
   if (S.stageId === "s5") {
-    acts.push({ id:"exam", ic:"📝", t:"Genel sınav", s:"Tüm etaplardan karışık · 15 soru" });
+    acts.push({ id:"exam", ic:icon("exam"), t:"Genel sınav", s:"Tüm etaplardan karışık · 15 soru" });
   }
 
   $("stageActions").innerHTML = acts.map(a =>
@@ -253,7 +254,7 @@ function showPhrases(c){
 function startFlash(words){
   const safeWords = Array.isArray(words) ? words.filter(w => Array.isArray(w) && w.length >= 2) : [];
   if (!safeWords.length) {
-    result("⚠️", "Kart bulunamadı", "Bu etapta henüz kelime verisi yok.", 0);
+    result("warning", "Kart bulunamadı", "Bu etapta henüz kelime verisi yok.", 0);
     return;
   }
   S.flash = { list: shuffle(safeWords.map(w => ({t:String(w[0]), n:String(w[1])}))), i:0, known:0 };
@@ -275,7 +276,7 @@ function finishFlash(){
   const xp = 12 + S.flash.known * 2;
   addXp(xp);
   maybeCompleteStage();
-  result("🃏","Kartlar bitti", S.flash.known+" kelime pekişti", xp);
+  result("cards","Kartlar bitti", S.flash.known+" kelime pekişti", xp);
 }
 
 /* Quiz / Exam — çift yön + cümle soruları */
@@ -333,7 +334,7 @@ function startQuiz(words, isExam){
   const safeWords = Array.isArray(words) ? words.filter(w => Array.isArray(w) && w.length >= 2) : [];
   const list = buildQuestions(safeWords, isExam);
   if (!list.length) {
-    result("⚠️", "Quiz açılamadı", "Bu dil için yeterli ders verisi bulunamadı.", 0);
+    result("warning", "Quiz açılamadı", "Bu dil için yeterli ders verisi bulunamadı.", 0);
     return;
   }
   S.quiz = { list, i:0, score:0, locked:false, exam: !!isExam };
@@ -394,13 +395,14 @@ function finishQuiz(){
     save();
   }
   // Sınavda %70+, quizde %60+ etap sayılır
-  P.quizStats=P.quizStats||{}; P.quizStats[stageKey(S.langId,S.stageId||"exam")]={score:s,total:t,at:Date.now()}; updateAchievements(); save();\n  const passLine = S.quiz.exam ? 0.7 : 0.6;
+  P.quizStats=P.quizStats||{}; P.quizStats[stageKey(S.langId,S.stageId||"exam")]={score:s,total:t,at:Date.now()}; updateAchievements(); save();
+  const passLine = S.quiz.exam ? 0.7 : 0.6;
   if (ratio >= passLine) maybeCompleteStage();
   let title = S.quiz.exam ? "Sınav bitti" : "Quiz bitti";
   let extra = s + "/" + t + " doğru";
   if (S.quiz.exam) extra += ratio >= 0.7 ? " · Geçtin ✓" : " · Tekrar dene";
-  const emoji = ratio === 1 ? "🏆" : ratio >= passLine ? "🎉" : "💪";
-  result(emoji, title, extra, xp);
+  const iconName = ratio === 1 ? "trophy" : ratio >= passLine ? "check" : "brain";
+  result(iconName, title, extra, xp);
 }
 
 function updateAchievements(){const d=Object.keys(P.done||{}).length,q=Object.keys(P.quizStats||{}).length,defs=[["first","🌱","İlk ders","İlk etabı tamamla",d>=1],["xp100","⭐","100 XP","100 XP kazan",P.xp>=100],["quiz5","🧠","Quizci","5 quiz",q>=5],["streak7","🔥","7 günlük seri","7 gün seri",P.streak>=7],["lang2","🌍","Dil gezgini","2 dil",Object.keys(P.started||{}).length>=2]];defs.forEach(x=>{if(x[4])P.achievements[x[0]]=true;});return defs;}
@@ -411,8 +413,8 @@ function maybeCompleteStage(){
   save();
 }
 
-function result(emoji, title, text, xp){
-  $("rEmoji").textContent = emoji;
+function result(iconName, title, text, xp){
+  $("rEmoji").innerHTML = icon(iconName, "result-icon");
   $("rTitle").textContent = title;
   $("rText").textContent = text;
   $("rXp").textContent = "+"+xp+" XP";
@@ -424,13 +426,13 @@ function openExams(){
   const last = P.exam && P.exam[S.langId];
   $("examList").innerHTML = `
     <div class="exam-card">
-      <h3>📝 Genel etap sınavı</h3>
+      <h3><img class="inline-icon" src="assets/icons/exam.svg" alt=""> Genel etap sınavı</h3>
       <p>15 soru: hedef dil → Türkçe, Türkçe → hedef dil ve cümle anlamı. Geçmek için %70+.</p>
       ${last ? `<p>Son: ${last.score}/${last.total}${last.pass ? " · Geçti ✓" : " · Kaldı"}</p>` : ""}
       <button class="btn primary" id="startExamBtn" type="button">Sınava başla</button>
     </div>
     <div class="exam-card">
-      <h3>✅ Hızlı quiz (Etap 1)</h3>
+      <h3><img class="inline-icon" src="assets/icons/check.svg" alt=""> Hızlı quiz (Etap 1)</h3>
       <p>Temel kelimelerden çift yönlü kısa quiz.</p>
       <button class="btn soft" id="quickQuizBtn" type="button">Başlat</button>
     </div>`;
@@ -478,14 +480,15 @@ async function handleAuth(e){
   } finally { $("authSubmit").disabled=false; $("authSubmit").textContent=handleAuth.mode==="register"?"Hesap oluştur":"Giriş yap"; }
 }
 handleAuth.mode="login";
-function bind(){
+function bindPublicAuth(){
   $("landingLoginTop").onclick=()=>{$("authPanel").classList.remove("hidden"); authMode("login"); handleAuth.mode="login";};
   $("landingStart").onclick=()=>{$("authPanel").classList.remove("hidden"); authMode("register"); handleAuth.mode="register";};
   $("authPanelClose").onclick=()=>$("authPanel").classList.add("hidden");
-
   $("authForm").addEventListener("submit",handleAuth);
   $("authLoginTab").onclick=()=>{handleAuth.mode="login";authMode("login");};
   $("authRegisterTab").onclick=()=>{handleAuth.mode="register";authMode("register");};
+}
+function bind(){
   $("langSearch").addEventListener("input", renderLangList);
   document.querySelectorAll("#regionTabs .tab").forEach(tab => {
     tab.addEventListener("click", () => {
@@ -522,7 +525,7 @@ function bind(){
     const xp = S.mode === "phrases" ? 10 : 8;
     addXp(xp);
     maybeCompleteStage();
-    result("✨","Ders tamam", "İçerik gözden geçirildi", xp);
+    result("check","Ders tamam", "İçerik gözden geçirildi", xp);
   };
   $("rOk").onclick = () => {
     if (S.langId) openPath();
@@ -553,6 +556,7 @@ function init(){
 }
 document.addEventListener("DOMContentLoaded", () => {
   authMode("login");
+  bindPublicAuth();
   const boot = async () => {
     if (!window.DilYolFirebase || !window.DilYolFirebase.user) return;
     if (window.DilYolFirebase.progress) {
