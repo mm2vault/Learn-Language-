@@ -1,5 +1,7 @@
 const KEY = "dilyol_v2";
 const DAILY_GOAL = 50;
+const AI_API = "https://learn-language-y6sj.netlify.app/api/ai";
+let aiVoiceEnabled = localStorage.getItem("dilyol_ai_voice") !== "0";
 
 const S = {
   view: "home",
@@ -373,10 +375,14 @@ function answerQuiz(btn, correct){
     S.quiz.score++;
     $("qFeed").textContent = "Doğru!";
     $("qFeed").style.color = "var(--mint)";
+    setAiState("happy","Harika! Doğru cevap.");
+    setTimeout(()=>setAiState("idle","Hazırım."),900);
   } else {
     btn.classList.add("bad");
     $("qFeed").textContent = "Doğru cevap: " + correct;
     $("qFeed").style.color = "#f87171";
+    setAiState("concern","Sorun değil, birlikte tekrar ediyoruz.");
+    setTimeout(()=>setAiState("idle","Hazırım."),1000);
     $("qOpts").querySelectorAll(".opt").forEach(b => {
       if (b.textContent === correct) b.classList.add("ok");
     });
@@ -441,7 +447,61 @@ function openExams(){
   show("exams");
 }
 
-function openAi(){$("aiModal").classList.remove("hidden");$("aiBody").innerHTML="<div class=\"ai-message bot\"><b>🤖 AI Öğretmen</b><p>"+$("aiRecText").textContent+"</p><small>XP: "+(P.xp||0)+" · Seri: "+(P.streak||0)+"</small></div>";} async function askAi(){const v=$("aiInput").value.trim();if(!v)return;$("aiInput").value="";try{const r=await fetch("https://learn-language-y6sj.netlify.app/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,progress:{lang:S.langId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats}})}),d=await r.json();if(!r.ok)throw Error();$("aiBody").insertAdjacentHTML("beforeend","<div class=\"ai-message bot\">"+String(d.reply||"Yanıt yok").replace(/\n/g,"<br>")+"</div>");}catch{$("aiBody").insertAdjacentHTML("beforeend","<div class=\"ai-message bot\">AI backend henüz bağlı değil. Tokeni güvenli ortam değişkenine ekleyince aktif olacak.</div>");}} function openProfile(){
+function escapeHtml(value){
+  const el=document.createElement("div"); el.textContent=String(value ?? ""); return el.innerHTML;
+}
+function setAiState(state="idle", status){
+  const classes=["ai-idle","ai-thinking","ai-speaking","ai-happy","ai-concern"];
+  ["aiAvatar","aiMiniAvatar"].forEach(id=>{ const el=$(id); if(!el) return; el.classList.remove(...classes); el.classList.add("ai-"+state); });
+  if($("aiStatus")) $("aiStatus").textContent=status || ({idle:"Hazırım.",thinking:"Düşünüyorum…",speaking:"Konuşuyor…",happy:"Harika! Böyle devam.",concern:"Burada birlikte tekrar yapabiliriz.",neutral:"Buradayım."}[state] || "Hazırım.");
+}
+function appendAiMessage(text, who="bot"){
+  const body=$("aiBody"); if(!body) return;
+  const row=document.createElement("div"); row.className="ai-message "+(who==="user"?"user":"bot");
+  row.innerHTML=escapeHtml(text).replace(/\n/g,"<br>"); body.appendChild(row); body.scrollTop=body.scrollHeight;
+}
+function chooseTurkishVoice(){
+  if(!( "speechSynthesis" in window)) return null;
+  const voices=window.speechSynthesis.getVoices()||[];
+  return voices.find(v=>/^tr(-|_)/i.test(v.lang)) || voices.find(v=>/turk|türk/i.test(v.name)) || voices[0] || null;
+}
+function speakAi(text){
+  if(!aiVoiceEnabled || !("speechSynthesis" in window) || !text){ setAiState("idle","Hazırım."); return; }
+  const spoken=String(text).replace(/[*_`#]/g,"").replace(/\n+/g,". ").trim().slice(0,900);
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(spoken); u.lang="tr-TR"; u.rate=.98; u.pitch=1.03;
+  const voice=chooseTurkishVoice(); if(voice) u.voice=voice;
+  u.onstart=()=>setAiState("speaking","Konuşuyor…"); u.onend=()=>setAiState("idle","Hazırım."); u.onerror=()=>setAiState("idle","Hazırım.");
+  setAiState("speaking","Konuşuyor…"); window.speechSynthesis.speak(u);
+}
+function updateAiVoiceButton(){
+  const b=$("aiVoiceToggle"); if(!b) return; b.textContent=aiVoiceEnabled?"Ses açık":"Ses kapalı"; b.setAttribute("aria-pressed",String(aiVoiceEnabled));
+}
+function openAi(){
+  $("aiModal").classList.remove("hidden"); $("aiModal").setAttribute("aria-hidden","false");
+  $("aiBody").innerHTML="";
+  const greeting=$("aiRecText").textContent || "Birlikte çalışmaya hazırız."; appendAiMessage(greeting,"bot");
+  $("aiSpeech").textContent="Hazırım. Bana bir kelime, cümle, quiz sonucu ya da ders sorusu gönder."; updateAiVoiceButton(); setAiState("idle","Hazırım.");
+  if(aiVoiceEnabled) speakAi("Hazırım. Bana bir kelime, cümle veya ders sorusu gönder.");
+}
+function closeAi(){
+  $("aiModal").classList.add("hidden"); $("aiModal").setAttribute("aria-hidden","true");
+  if("speechSynthesis" in window) window.speechSynthesis.cancel(); setAiState("idle","Hazırım.");
+}
+async function askAi(){
+  const input=$("aiInput"), send=$("aiSend"), v=input.value.trim(); if(!v) return;
+  input.value=""; appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
+  try{
+    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
+    const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||"AI isteği başarısız.");
+    const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
+    setAiState(d.mood==="happy"?"happy":d.mood==="concern"?"concern":"speaking",d.mood==="happy"?"Harika!":d.mood==="concern"?"Birlikte düzeltiyoruz.":"Konuşuyor…"); speakAi(reply);
+  }catch(err){
+    const message=err?.message||"AI isteği sırasında bir hata oluştu."; appendAiMessage("AI bağlantısı şu an yanıt vermedi. "+message,"bot");
+    $("aiSpeech").textContent="Bağlantıda bir sorun oldu. Tekrar deneyebiliriz."; setAiState("concern","Bağlantı sorunu");
+  }finally{ send.disabled=false; }
+}
+function openProfile(){
   const langsStarted = Object.keys(P.started||{}); updateAchievements();
   const stagesDone = Object.keys(P.done||{}).length;
   $("profileBody").innerHTML = `
@@ -505,7 +565,11 @@ function bind(){
       if (g === "path") openPath();
     });
   });
-  $("btnProfile").onclick = openProfile; $("aiOpen").onclick=openAi; $("aiClose").onclick=()=>$("aiModal").classList.add("hidden"); $("aiSend").onclick=askAi; $("aiInput").addEventListener("keydown",e=>{if(e.key==="Enter")askAi();});
+  $("btnProfile").onclick=openProfile;
+$("aiOpen").onclick=openAi; $("aiClose").onclick=closeAi; $("aiSend").onclick=askAi;
+$("aiInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askAi();}});
+$("aiVoiceToggle").onclick=()=>{ aiVoiceEnabled=!aiVoiceEnabled; localStorage.setItem("dilyol_ai_voice",aiVoiceEnabled?"1":"0"); updateAiVoiceButton(); if(!aiVoiceEnabled&&"speechSynthesis" in window) window.speechSynthesis.cancel(); if(aiVoiceEnabled) speakAi("Sesli AI öğretmeni açıldı."); };
+updateAiVoiceButton();
   $("btnExamList").onclick = openExams;
 
   $("flashCard").onclick = () => {
