@@ -1,5 +1,7 @@
+const CORS = {"Access-Control-Allow-Origin":"https://mm2vault.github.io","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin"};
+
 export default async (req) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: { "Access-Control-Allow-Origin": "https://mm2vault.github.io", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST,OPTIONS" } });
+  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
   if (req.method !== "POST") return json({ error: "POST gerekli." }, 405);
   const token = Netlify.env.get("HF_TOKEN");
   if (!token) return json({ error: "HF_TOKEN ayarlanmamış." }, 500);
@@ -33,12 +35,19 @@ export default async (req) => {
     });
     const data = await r.json();
     if (!r.ok) return json({error:data?.error||"Hugging Face isteği başarısız."},r.status);
-    return json({reply:data?.choices?.[0]?.message?.content||"AI yanıt üretmedi."},200);
+    const reply=data?.choices?.[0]?.message?.content||"AI yanıt üretmedi.";
+    return json({reply,mood:moodFor(reply)},200);
   } catch {
     return json({error:"AI isteği işlenemedi."},500);
   }
 };
 export const config = { path: "/api/ai" };
+function moodFor(text){
+  const t=String(text||"").toLowerCase();
+  if(/harika|tebrik|doğru|mükemmel|başardın/.test(t)) return "happy";
+  if(/yanlış|dikkat|hata|tekrar|zorlan/.test(t)) return "concern";
+  return "neutral";
+}
 function json(data,status){
-  return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json"}});
+  return new Response(JSON.stringify(data),{status,headers:{...CORS,"Content-Type":"application/json"}});
 }
