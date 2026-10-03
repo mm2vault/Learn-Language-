@@ -1,4 +1,5 @@
 export default async (req) => {
+  if (req.method === "OPTIONS") return new Response("", { status: 204, headers: { "Access-Control-Allow-Origin": "https://mm2vault.github.io", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST,OPTIONS" } });
   if (req.method !== "POST") return json({ error: "POST gerekli." }, 405);
   const token = Netlify.env.get("HF_TOKEN");
   if (!token) return json({ error: "HF_TOKEN ayarlanmamış." }, 500);
