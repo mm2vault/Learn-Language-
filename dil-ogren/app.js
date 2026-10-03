@@ -479,6 +479,10 @@ async function handleAuth(e){
 }
 handleAuth.mode="login";
 function bind(){
+  $("landingLoginTop").onclick=()=>{$("authPanel").classList.remove("hidden"); authMode("login"); handleAuth.mode="login";};
+  $("landingStart").onclick=()=>{$("authPanel").classList.remove("hidden"); authMode("register"); handleAuth.mode="register";};
+  $("authPanelClose").onclick=()=>$("authPanel").classList.add("hidden");
+
   $("authForm").addEventListener("submit",handleAuth);
   $("authLoginTab").onclick=()=>{handleAuth.mode="login";authMode("login");};
   $("authRegisterTab").onclick=()=>{handleAuth.mode="register";authMode("register");};
