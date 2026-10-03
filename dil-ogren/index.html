@@ -21,12 +21,13 @@
         <button id="authRegisterTab" class="auth-tab" type="button">Kayıt ol</button>
       </div>
       <form id="authForm">
-        <input id="authName" required minlength="2" maxlength="24" autocomplete="username" placeholder="Kullanıcı adı" />
+        <input id="authName" minlength="2" maxlength="24" autocomplete="name" placeholder="Kullanıcı adı (kayıtta)" />
+        <input id="authEmail" required type="email" autocomplete="email" placeholder="E-posta" />
         <input id="authPass" required minlength="6" maxlength="72" type="password" autocomplete="current-password" placeholder="Şifre" />
         <button class="btn primary block" type="submit" id="authSubmit">Giriş yap</button>
       </form>
       <p id="authError" class="auth-error"></p>
-      <p class="tiny muted">Not: Bu GitHub Pages sürümünde hesap verileri bu cihazda tutulur. Gerçek çoklu-cihaz hesapları için sonraki adımda Firebase/Supabase Auth bağlanabilir.</p>
+      <p class="tiny muted">Hesabın Firebase Authentication ile korunur; ilerlemen Firestore'a kaydedilir ve farklı cihazlarda devam edebilirsin.</p>
     </div>
   </div>
   <div id="aiModal" class="ai-modal hidden">
@@ -189,6 +190,10 @@
   </div>
   <script src="languages.js"></script>
   <script src="content.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="firebase.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
