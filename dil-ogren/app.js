@@ -543,8 +543,21 @@ async function handleAuth(e){
     if(handleAuth.mode==="register") await window.DilYolFirebase.register(email,pass,name);
     else await window.DilYolFirebase.login(email,pass);
   } catch(err) {
-    const m={"auth/email-already-in-use":"Bu e-posta zaten kayıtlı.","auth/invalid-email":"Geçerli bir e-posta gir.","auth/weak-password":"Şifre en az 6 karakter olmalı.","auth/invalid-credential":"E-posta veya şifre hatalı.","auth/user-not-found":"Bu hesap bulunamadı.","auth/wrong-password":"Şifre hatalı."};
-    $("authError").textContent=m[err.code]||"Giriş başarısız. Firebase Authentication ayarlarını kontrol et.";
+    const m={
+      "auth/email-already-in-use":"Bu e-posta zaten kayıtlı.",
+      "auth/invalid-email":"Geçerli bir e-posta gir.",
+      "auth/weak-password":"Şifre en az 6 karakter olmalı.",
+      "auth/invalid-credential":"E-posta veya şifre hatalı.",
+      "auth/user-not-found":"Bu hesap bulunamadı.",
+      "auth/wrong-password":"Şifre hatalı.",
+      "auth/operation-not-allowed":"Firebase Authentication'da E-posta/Şifre girişini açman gerekiyor.",
+      "auth/configuration-not-found":"Firebase Authentication yapılandırması eksik.",
+      "auth/invalid-api-key":"Firebase API anahtarı geçersiz.",
+      "auth/network-request-failed":"İnternet veya Firebase bağlantısı kurulamadı.",
+      "auth/too-many-requests":"Çok fazla deneme yapıldı. Biraz sonra tekrar dene."
+    };
+    const detail=err?.message ? " ("+String(err.message).replace(/^Firebase:\s*/,"").slice(0,180)+")" : "";
+    $("authError").textContent=m[err.code]||((window.DilYolFirebase&&window.DilYolFirebase.error)||"Giriş başarısız.")+detail;
   } finally { $("authSubmit").disabled=false; $("authSubmit").textContent=handleAuth.mode==="register"?"Hesap oluştur":"Giriş yap"; }
 }
 handleAuth.mode="login";
@@ -630,7 +643,11 @@ document.addEventListener("DOMContentLoaded", () => {
   authMode("login");
   bindPublicAuth();
   const boot = async () => {
-    if (!window.DilYolFirebase || !window.DilYolFirebase.user) return;
+    if (!window.DilYolFirebase) {
+      $("authError").textContent="Firebase bağlantısı yüklenemedi. Sayfayı yenileyip tekrar dene.";
+      return;
+    }
+    if (!window.DilYolFirebase.user) return;
     if (window.DilYolFirebase.progress) {
       const remote=window.DilYolFirebase.progress, defaults=base();
       P={...defaults,...remote,done:remote.done&&typeof remote.done==="object"?remote.done:{},exam:remote.exam&&typeof remote.exam==="object"?remote.exam:{},started:remote.started&&typeof remote.started==="object"?remote.started:{},quizStats:remote.quizStats&&typeof remote.quizStats==="object"?remote.quizStats:{},achievements:remote.achievements&&typeof remote.achievements==="object"?remote.achievements:{}};
