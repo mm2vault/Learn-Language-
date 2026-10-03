@@ -394,3 +394,15 @@ html, body {
   .how-section{display:none}
   .landing-glow{width:260px;height:260px;filter:blur(80px)}
 }
+
+
+/* AI adaptive learning themes */
+:root[data-ai-theme="focus"]{--ai-accent:#6ea8ff}
+:root[data-ai-theme="calm"]{--ai-accent:#6ee7c8}
+:root[data-ai-theme="energy"]{--ai-accent:#f6b85f}
+:root[data-ai-theme="night"]{--ai-accent:#a78bfa}
+:root[data-ai-theme="minimal"]{--ai-accent:#cbd5e1}
+:root[data-ai-theme="focus"] .card,.ai-card{transition:box-shadow .25s ease,border-color .25s ease}
+:root[data-ai-theme="focus"] .card{box-shadow:0 0 0 1px color-mix(in srgb,var(--ai-accent) 18%,transparent),0 18px 50px rgba(40,90,180,.12)}
+:root[data-ai-theme="calm"] .card{box-shadow:0 0 0 1px color-mix(in srgb,var(--ai-accent) 16%,transparent)}
+:root[data-ai-theme="energy"] .progress-fill,.theme-accent{background:var(--ai-accent)}
