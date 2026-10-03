@@ -1,6 +1,6 @@
 const KEY = "dilyol_v2";
 const DAILY_GOAL = 50;
-const AI_API = "https://learn-language-y6sj.netlify.app/api/ai";
+const AI_API = "https://dilyol-ai.<YOUR-CLOUDFLARE-SUBDOMAIN>.workers.dev";
 let aiVoiceEnabled = localStorage.getItem("dilyol_ai_voice") !== "0";
 
 const S = {
