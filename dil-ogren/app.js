@@ -31,7 +31,7 @@ function load() {
 function base() {
   return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {}, quizStats: {}, achievements: {} };
 }
-function save() { localStorage.setItem(KEY, JSON.stringify(P)); }
+function save() { localStorage.setItem(KEY, JSON.stringify(P)); if (window.DilYolFirebase && window.DilYolFirebase.user) { clearTimeout(window.__dlySaveTimer); window.__dlySaveTimer=setTimeout(()=>window.DilYolFirebase.save(P).catch(console.error),450); } }
 let P = load();
 
 function today() {
@@ -455,7 +455,33 @@ function openAi(){$("aiModal").classList.remove("hidden");$("aiBody").innerHTML=
   show("profile");
 }
 
+function authMode(mode){
+  $("authLoginTab").classList.toggle("on",mode==="login");
+  $("authRegisterTab").classList.toggle("on",mode==="register");
+  $("authSubmit").textContent=mode==="register"?"Hesap oluştur":"Giriş yap";
+  $("authName").required=mode==="register";
+  $("authName").style.display=mode==="register"?"":"none";
+  $("authError").textContent="";
+}
+async function handleAuth(e){
+  e.preventDefault();
+  const email=$("authEmail").value.trim(), pass=$("authPass").value, name=$("authName").value.trim();
+  $("authError").textContent="";
+  if(handleAuth.mode==="register" && name.length<2){ $("authError").textContent="Kullanıcı adı en az 2 karakter olmalı."; return; }
+  $("authSubmit").disabled=true;
+  try {
+    if(handleAuth.mode==="register") await window.DilYolFirebase.register(email,pass,name);
+    else await window.DilYolFirebase.login(email,pass);
+  } catch(err) {
+    const m={"auth/email-already-in-use":"Bu e-posta zaten kayıtlı.","auth/invalid-email":"Geçerli bir e-posta gir.","auth/weak-password":"Şifre en az 6 karakter olmalı.","auth/invalid-credential":"E-posta veya şifre hatalı.","auth/user-not-found":"Bu hesap bulunamadı.","auth/wrong-password":"Şifre hatalı."};
+    $("authError").textContent=m[err.code]||"Giriş başarısız. Firebase Authentication ayarlarını kontrol et.";
+  } finally { $("authSubmit").disabled=false; $("authSubmit").textContent=handleAuth.mode==="register"?"Hesap oluştur":"Giriş yap"; }
+}
+handleAuth.mode="login";
 function bind(){
+  $("authForm").addEventListener("submit",handleAuth);
+  $("authLoginTab").onclick=()=>{handleAuth.mode="login";authMode("login");};
+  $("authRegisterTab").onclick=()=>{handleAuth.mode="register";authMode("register");};
   $("langSearch").addEventListener("input", renderLangList);
   document.querySelectorAll("#regionTabs .tab").forEach(tab => {
     tab.addEventListener("click", () => {
@@ -521,4 +547,19 @@ function init(){
       </main>`;
   }
 }
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => {
+  authMode("login");
+  const boot = async () => {
+    if (!window.DilYolFirebase || !window.DilYolFirebase.user) return;
+    if (window.DilYolFirebase.progress) {
+      const remote=window.DilYolFirebase.progress, defaults=base();
+      P={...defaults,...remote,done:remote.done&&typeof remote.done==="object"?remote.done:{},exam:remote.exam&&typeof remote.exam==="object"?remote.exam:{},started:remote.started&&typeof remote.started==="object"?remote.started:{},quizStats:remote.quizStats&&typeof remote.quizStats==="object"?remote.quizStats:{},achievements:remote.achievements&&typeof remote.achievements==="object"?remote.achievements:{}};
+      localStorage.setItem(KEY,JSON.stringify(P));
+    } else { await window.DilYolFirebase.save(P); }
+    $("authGate").classList.add("hidden");
+    init();
+  };
+  if(window.DilYolFirebase && window.DilYolFirebase.ready) boot();
+  else window.addEventListener("dilyol-auth-ready",boot,{once:true});
+  window.addEventListener("dilyol-auth-signed-out",()=>{$("authGate").classList.remove("hidden");});
+});
