@@ -73,8 +73,8 @@ export default {
         message
       ].join("\n");
 
-      const model = env.GEMINI_MODEL || "gemini-2.5-flash";
-      const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
+      const model = env.GEMINI_MODEL || "gemini-3.8-flash";
+      const endpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
       const response = await fetch(endpoint, {
         method:"POST",
         headers:{
@@ -82,15 +82,17 @@ export default {
           "x-goog-api-key":env.GEMINI_API_KEY
         },
         body:JSON.stringify({
-          contents:[{role:"user",parts:[{text:prompt}]}],
-          generationConfig:{temperature:0.3,maxOutputTokens:500}
+          model,
+          input:prompt,
+          store:false,
+          generation_config:{temperature:0.3,max_output_tokens:500}
         })
       });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) return json({error:data?.error?.message || "Gemini isteği başarısız."},response.status);
 
-      const reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "AI yanıt üretmedi.";
+      const reply = data?.output_text || data?.outputs?.filter(x => x?.type === "text")?.map(x => x.text || "").join("") || "AI yanıt üretmedi.";
       return json({reply,mood:moodFor(reply)});
     } catch (error) {
       return json({error:"AI isteği işlenemedi."},500);
