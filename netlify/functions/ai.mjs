@@ -1,10 +1,14 @@
-const CORS = {"Access-Control-Allow-Origin":"https://mm2vault.github.io","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"POST,OPTIONS","Vary":"Origin"};
+const CORS = {"Access-Control-Allow-Origin":"https://mm2vault.github.io","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Vary":"Origin"};
 
 export default async (req) => {
   if (req.method === "OPTIONS") return new Response("", { status: 204, headers: CORS });
+  if (req.method === "GET") {
+    const hasToken = Boolean(Netlify.env.get("HF_TOKEN"));
+    return json({ ok: true, aiConfigured: hasToken, message: hasToken ? "AI hazır." : "Netlify HF_TOKEN eksik." }, 200);
+  }
   if (req.method !== "POST") return json({ error: "POST gerekli." }, 405);
   const token = Netlify.env.get("HF_TOKEN");
-  if (!token) return json({ error: "HF_TOKEN ayarlanmamış." }, 500);
+  if (!token) return json({ error: "AI sunucusu yapılandırılmamış: Netlify'da HF_TOKEN eklenmeli." }, 500);
   try {
     const body = await req.json();
     const message = String(body.message || "").slice(0, 4000);
