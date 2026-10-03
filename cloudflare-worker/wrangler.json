@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dilyol-ai",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-02",
+  "secrets": {
+    "required": ["GEMINI_API_KEY"]
+  },
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.6-flash"
+  }
+}
