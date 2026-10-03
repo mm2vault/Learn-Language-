@@ -503,7 +503,7 @@ async function askAi(){
   try{
     let r;
     try{
-      r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload},signal:AbortSignal.timeout(18000)});
+      r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(18000)});
     }catch(firstErr){
       r=await fetch("https://learn-language-y6sj.netlify.app/.netlify/functions/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:AbortSignal.timeout(18000)});
     }
