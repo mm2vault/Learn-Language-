@@ -12,6 +12,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <div id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <div class="auth-logo">DilYol</div>
+      <p class="muted">Kendi hesabını oluştur ve ilerlemeni kaybetme.</p>
+      <div class="auth-tabs">
+        <button id="authLoginTab" class="auth-tab on" type="button">Giriş yap</button>
+        <button id="authRegisterTab" class="auth-tab" type="button">Kayıt ol</button>
+      </div>
+      <form id="authForm">
+        <input id="authName" required minlength="2" maxlength="24" autocomplete="username" placeholder="Kullanıcı adı" />
+        <input id="authPass" required minlength="6" maxlength="72" type="password" autocomplete="current-password" placeholder="Şifre" />
+        <button class="btn primary block" type="submit" id="authSubmit">Giriş yap</button>
+      </form>
+      <p id="authError" class="auth-error"></p>
+      <p class="tiny muted">Not: Bu GitHub Pages sürümünde hesap verileri bu cihazda tutulur. Gerçek çoklu-cihaz hesapları için sonraki adımda Firebase/Supabase Auth bağlanabilir.</p>
+    </div>
+  </div>
+  <div id="aiModal" class="ai-modal hidden">
+    <div class="ai-card">
+      <div class="ai-head"><div><b>🤖 AI Öğretmen</b><small id="aiStatus">İlerlemeni analiz ediyor…</small></div><button id="aiClose" class="back" type="button">×</button></div>
+      <div id="aiBody" class="ai-body"></div>
+      <div class="ai-input-row"><input id="aiInput" placeholder="Örn. Bu cümleyi düzelt: I goed school" /><button id="aiSend" class="btn primary" type="button">Gönder</button></div>
+    </div>
+  </div>
   <div id="app">
 
     <!-- HOME -->
@@ -34,6 +58,11 @@
           <div class="bar"><i id="goalFill"></i></div>
         </div>
       </header>
+      <div id="continueCard" class="continue-card"></div>
+      <div class="ai-recommend" id="aiRecommend">
+        <div><span class="ai-badge">🤖 AI</span><h3 id="aiRecTitle">Sana özel ders hazırlanıyor</h3><p id="aiRecText">Quiz sonuçlarına göre sıradaki adımı belirleyeceğiz.</p></div>
+        <button id="aiOpen" class="btn primary" type="button">AI Öğretmen</button>
+      </div>
 
       <div class="search-wrap">
         <input type="search" id="langSearch" placeholder="Dil ara (50+ dil)…" autocomplete="off" />
