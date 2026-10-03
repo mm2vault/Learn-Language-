@@ -500,7 +500,7 @@ async function askAi(){
   const input=$("aiInput"), send=$("aiSend"), v=input.value.trim(); if(!v) return;
   input.value=""; S.aiHistory.push({role:"user",content:v}); appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
   try{
-    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,history:S.aiHistory.slice(-10),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
+    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,history:S.aiHistory.slice(0,-1).slice(-9),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
     const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||"AI isteği başarısız.");
     const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); S.aiHistory.push({role:"assistant",content:reply}); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
     setAiState(d.mood==="happy"?"happy":d.mood==="concern"?"concern":"speaking",d.mood==="happy"?"Harika!":d.mood==="concern"?"Birlikte düzeltiyoruz.":"Konuşuyor…"); speakAi(reply);
@@ -512,16 +512,21 @@ async function askAi(){
 function openProfile(){
   const langsStarted = Object.keys(P.started||{}); updateAchievements();
   const stagesDone = Object.keys(P.done||{}).length;
+  const defs=updateAchievements();
+  const achievementRows=defs.map(x=>`<div class="achievement ${P.achievements[x[0]]?"unlocked":""}"><span>${icon(x[1]==="xp"?"trophy":x[0]==="quiz5"?"brain":x[0]==="lang2"?"globe":"check","achievement-icon")}</span><b>${x[2]}</b><small>${x[3]}</small></div>`).join("");
   $("profileBody").innerHTML = `
     <div class="prof-card"><h3>Toplam XP</h3><p style="font-size:28px;font-weight:800;color:var(--blue)">${P.xp||0}</p></div>
-    <div class="prof-card"><h3>Gün serisi</h3><p style="font-size:28px;font-weight:800">${P.streak||0} 🔥</p></div>
+    <div class="prof-card"><h3>Gün serisi</h3><p style="font-size:28px;font-weight:800">${P.streak||0}</p></div>
     <div class="prof-card"><h3>Başlanan dil</h3><p style="font-size:28px;font-weight:800">${langsStarted.length} / ${LANG_META.length}</p></div>
     <div class="prof-card"><h3>Bitirilen etap</h3><p style="font-size:28px;font-weight:800">${stagesDone}</p></div>
     <div class="prof-card"><h3>Günlük hedef</h3><p>${P.dailyXp||0} / ${DAILY_GOAL} XP</p>
       <div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,Math.round(((P.dailyXp||0)/DAILY_GOAL)*100))}%"></i></div>
     </div>
     <div class="prof-card"><h3>Diller</h3><p>${LANG_META.length} dil · 5 etaplı yol · quiz & sınav</p></div>
+    <div class="prof-card"><h3>Başarımlar</h3><div class="achievement-grid">${achievementRows}</div></div>
+    <div class="prof-card"><p><b>${window.DilYolFirebase?.user?.displayName||"DilYol kullanıcısı"}</b><br>${window.DilYolFirebase?.user?.email||""}</p><button class="btn soft block" id="profileLogout" type="button">Çıkış yap</button></div>
   `;
+  $("profileLogout").onclick=async()=>{try{await window.DilYolFirebase.logout();}catch(e){console.error(e);}};
   show("profile");
 }
 
@@ -652,7 +657,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const remote=window.DilYolFirebase.progress, defaults=base();
       P={...defaults,...remote,done:remote.done&&typeof remote.done==="object"?remote.done:{},exam:remote.exam&&typeof remote.exam==="object"?remote.exam:{},started:remote.started&&typeof remote.started==="object"?remote.started:{},quizStats:remote.quizStats&&typeof remote.quizStats==="object"?remote.quizStats:{},achievements:remote.achievements&&typeof remote.achievements==="object"?remote.achievements:{}};
       localStorage.setItem(KEY,JSON.stringify(P));
-    } else { await window.DilYolFirebase.save(P); }
+    } else {
+      try { await window.DilYolFirebase.save(P); }
+      catch(e) { console.warn("Firestore kayıt atlandı; yerel ilerleme kullanılacak:", e); }
+    }
     $("authGate").classList.add("hidden");
     init();
   };
