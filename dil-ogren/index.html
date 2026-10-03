@@ -13,21 +13,40 @@
 </head>
 <body>
   <div id="authGate" class="auth-gate">
-    <div class="auth-card">
-      <div class="auth-logo">DilYol</div>
-      <p class="muted">Kendi hesabını oluştur ve ilerlemeni kaybetme.</p>
-      <div class="auth-tabs">
-        <button id="authLoginTab" class="auth-tab on" type="button">Giriş yap</button>
-        <button id="authRegisterTab" class="auth-tab" type="button">Kayıt ol</button>
+    <div class="landing">
+      <div class="landing-glow glow-a"></div><div class="landing-glow glow-b"></div>
+      <nav class="landing-nav"><div class="auth-logo">DilYol<span>.</span></div><button id="landingLoginTop" class="landing-login" type="button">Giriş yap</button></nav>
+      <main class="landing-main">
+        <section class="landing-hero">
+          <div class="eyebrow">🌍 50+ DİL · KİŞİSEL ÖĞRENME</div>
+          <h1>Dil öğrenmeyi<br><span>bir yolculuğa</span> dönüştür.</h1>
+          <p>Kelime ezberlemekten daha fazlası. DilYol; dersler, kartlar, quizler, sınavlar ve yapay zekâ öğretmeniyle sana göre ilerleyen bir dil öğrenme alanı.</p>
+          <div class="landing-cta"><button id="landingStart" class="btn primary" type="button">Ücretsiz başla <b>→</b></button><span>Hesap oluştur · İlerlemeni kaydet</span></div>
+        </section>
+        <section class="feature-grid">
+          <article class="feature-card featured"><div class="feature-icon">🧭</div><h3>Kaldığın yerden devam</h3><p>Hangi dili ve hangi etabı bıraktığını hatırlarız. Tekrar geldiğinde yolun kaldığın yerden açılır.</p><div class="mini-progress"><i></i></div></article>
+          <article class="feature-card"><div class="feature-icon">🧠</div><h3>Akıllı tekrar</h3><p>Kartlar ve quizlerle öğrendiklerini farklı yönlerden tekrar et.</p></article>
+          <article class="feature-card"><div class="feature-icon">🏆</div><h3>XP & başarımlar</h3><p>Günlük hedefler, seri ve başarımlarla ilerlemeni görünür hale getir.</p></article>
+          <article class="feature-card"><div class="feature-icon">🤖</div><h3>AI Öğretmen</h3><p>Quiz sonuçlarını analiz et, zayıf konularını keşfet ve sonraki adım için öneri al.</p></article>
+        </section>
+        <section class="how-section"><div><span class="eyebrow">NASIL ÇALIŞIR?</span><h2>Basit başla, düzenli ilerle.</h2></div><div class="steps"><div><b>01</b><strong>Dilini seç</strong><small>50+ seçenek arasından hedefini belirle.</small></div><div><b>02</b><strong>Etapları tamamla</strong><small>Kelimeler, cümleler, kartlar ve quizler.</small></div><div><b>03</b><strong>İlerlemeni geliştir</strong><small>AI önerileri ve sınavlarla seviyeni güçlendir.</small></div></div></section>
+      </main>
+      <div id="authPanel" class="auth-panel hidden">
+        <div class="auth-card">
+          <button id="authPanelClose" class="auth-close" type="button">×</button>
+          <div class="auth-logo">DilYol<span>.</span></div>
+          <p class="muted">Hesabına giriş yap veya yeni bir hesap oluştur.</p>
+          <div class="auth-tabs"><button id="authLoginTab" class="auth-tab on" type="button">Giriş yap</button><button id="authRegisterTab" class="auth-tab" type="button">Kayıt ol</button></div>
+          <form id="authForm">
+            <input id="authName" minlength="2" maxlength="24" autocomplete="name" placeholder="Kullanıcı adı (kayıtta)" />
+            <input id="authEmail" required type="email" autocomplete="email" placeholder="E-posta" />
+            <input id="authPass" required minlength="6" maxlength="72" type="password" autocomplete="current-password" placeholder="Şifre" />
+            <button class="btn primary block" type="submit" id="authSubmit">Giriş yap</button>
+          </form>
+          <p id="authError" class="auth-error"></p>
+          <p class="tiny muted">Güvenli giriş · İlerlemen Firestore'a kaydedilir.</p>
+        </div>
       </div>
-      <form id="authForm">
-        <input id="authName" minlength="2" maxlength="24" autocomplete="name" placeholder="Kullanıcı adı (kayıtta)" />
-        <input id="authEmail" required type="email" autocomplete="email" placeholder="E-posta" />
-        <input id="authPass" required minlength="6" maxlength="72" type="password" autocomplete="current-password" placeholder="Şifre" />
-        <button class="btn primary block" type="submit" id="authSubmit">Giriş yap</button>
-      </form>
-      <p id="authError" class="auth-error"></p>
-      <p class="tiny muted">Hesabın Firebase Authentication ile korunur; ilerlemen Firestore'a kaydedilir ve farklı cihazlarda devam edebilirsin.</p>
     </div>
   </div>
   <div id="aiModal" class="ai-modal hidden">
