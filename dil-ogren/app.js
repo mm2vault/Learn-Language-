@@ -536,7 +536,7 @@ async function askAi(){
   }catch(err){
     const message=err?.name==="AbortError"?"AI yanıtı zaman aşımına uğradı.":(err?.message||"Sunucuya ulaşılamadı.");
     S.aiHistory.pop();
-    appendAiMessage("AI şu an bağlanamadı. "+message+" Netlify AI ayarını kontrol et.","bot");
+    appendAiMessage("AI şu an bağlanamadı. "+message+" Cloudflare AI ayarını kontrol et.","bot");
     $("aiSpeech").textContent="AI bağlantısı kontrol edilmeli."; setAiState("concern","Bağlantı sorunu");
   }finally{ send.disabled=false; }
 }
