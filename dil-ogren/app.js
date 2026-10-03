@@ -10,7 +10,8 @@ const S = {
   region: "all",
   flash: null,
   quiz: null,
-  mode: null
+  mode: null,
+  aiHistory: []
 };
 
 function load() {
@@ -480,9 +481,16 @@ function updateAiVoiceButton(){
 function openAi(){
   $("aiModal").classList.remove("hidden"); $("aiModal").setAttribute("aria-hidden","false");
   $("aiBody").innerHTML="";
-  const greeting=$("aiRecText").textContent || "Birlikte çalışmaya hazırız."; appendAiMessage(greeting,"bot");
-  $("aiSpeech").textContent="Hazırım. Bana bir kelime, cümle, quiz sonucu ya da ders sorusu gönder."; updateAiVoiceButton(); setAiState("idle","Hazırım.");
-  if(aiVoiceEnabled) speakAi("Hazırım. Bana bir kelime, cümle veya ders sorusu gönder.");
+  if(!S.aiHistory.length){
+    const greeting=$("aiRecText").textContent || "Birlikte çalışmaya hazırız.";
+    S.aiHistory.push({role:"assistant",content:greeting}); appendAiMessage(greeting,"bot");
+    $("aiSpeech").textContent="Hazırım. Bana bir kelime, cümle, quiz sonucu ya da ders sorusu gönder.";
+    if(aiVoiceEnabled) speakAi("Hazırım. Bana bir kelime, cümle veya ders sorusu gönder.");
+  }else{
+    S.aiHistory.forEach(m=>appendAiMessage(m.content,m.role==="user"?"user":"bot"));
+    const last=S.aiHistory[S.aiHistory.length-1]; $("aiSpeech").textContent=last?.content||"Hazırım.";
+  }
+  updateAiVoiceButton(); setAiState("idle","Hazırım.");
 }
 function closeAi(){
   $("aiModal").classList.add("hidden"); $("aiModal").setAttribute("aria-hidden","true");
@@ -490,11 +498,11 @@ function closeAi(){
 }
 async function askAi(){
   const input=$("aiInput"), send=$("aiSend"), v=input.value.trim(); if(!v) return;
-  input.value=""; appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
+  input.value=""; S.aiHistory.push({role:"user",content:v}); appendAiMessage(v,"user"); $("aiSpeech").textContent="Mesajını analiz ediyorum…"; setAiState("thinking","Düşünüyorum…"); send.disabled=true;
   try{
-    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
+    const r=await fetch(AI_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,history:S.aiHistory.slice(-10),progress:{lang:S.langId,stage:S.stageId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats,dailyXp:P.dailyXp,started:P.started}})});
     const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||"AI isteği başarısız.");
-    const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
+    const reply=String(d.reply||"Şu an yanıt üretemedim. Biraz daha açık sorabilir misin?"); S.aiHistory.push({role:"assistant",content:reply}); appendAiMessage(reply,"bot"); $("aiSpeech").textContent=reply;
     setAiState(d.mood==="happy"?"happy":d.mood==="concern"?"concern":"speaking",d.mood==="happy"?"Harika!":d.mood==="concern"?"Birlikte düzeltiyoruz.":"Konuşuyor…"); speakAi(reply);
   }catch(err){
     const message=err?.message||"AI isteği sırasında bir hata oluştu."; appendAiMessage("AI bağlantısı şu an yanıt vermedi. "+message,"bot");
