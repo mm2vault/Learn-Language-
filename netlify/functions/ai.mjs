@@ -15,6 +15,7 @@ export default async (req) => {
     const progress = body.progress || {};
     const history = Array.isArray(body.history) ? body.history.slice(-10).filter(x => x && (x.role === "user" || x.role === "assistant") && x.content).map(x => ({role:x.role,content:String(x.content).slice(0,2000)})) : [];
     const model = Netlify.env.get("GEMINI_MODEL") || "gemini-3.6-flash";
+    const system = `Sen DilYol adlı kişiselleştirilmiş dil öğrenme uygulamasının AI öğretmenisin. Kullanıcının ders cevaplarını, quiz sonuçlarını, tamamladığı aktiviteleri ve mevcut planını analiz et. Yanıtı Türkçe ver. Kullanıcıya uygun, uygulanabilir bir sonraki çalışma planı oluştur. Başarı uydurma. Görünüm için yalnızca şu temalardan birini seç: default, focus, calm, energy, night, minimal. Yalnızca geçerli JSON döndür: {"reply":"...","plan":{"minutes":20,"focus":"...","steps":["...","...","..."],"reason":"..."},"theme":"focus","mood":"neutral"}. mood yalnızca happy, concern veya neutral olabilir.`;
     const prompt = [
       system,
       "",
@@ -34,9 +35,20 @@ export default async (req) => {
     });
     const data = await r.json();
     if (!r.ok) return json({error:data?.error?.message||"Gemini isteği başarısız."},r.status);
-    const reply=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"AI yanıt üretmedi.";
-
-    return json({reply,mood:moodFor(reply)},200);
+    const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
+    let parsed=null;
+    try { parsed=JSON.parse(raw.replace(/^\`\`\`json\s*/,"").replace(/\s*\`\`\`$/,"").trim()); } catch {}
+    const reply=String(parsed?.reply||raw||"AI yanıt üretmedi.");
+    const plan=parsed?.plan&&typeof parsed.plan==="object" ? {
+      minutes:Math.max(5,Math.min(90,Number(parsed.plan.minutes)||20)),
+      focus:String(parsed.plan.focus||"Bugünkü ders").slice(0,160),
+      steps:Array.isArray(parsed.plan.steps)?parsed.plan.steps.slice(0,5).map(x=>String(x).slice(0,140)):[],
+      reason:String(parsed.plan.reason||"İlerlemenize göre kişiselleştirildi.").slice(0,200)
+    } : null;
+    const allowedThemes=["default","focus","calm","energy","night","minimal"];
+    const theme=allowedThemes.includes(parsed?.theme)?parsed.theme:"default";
+    const mood=["happy","concern","neutral"].includes(parsed?.mood)?parsed.mood:moodFor(reply);
+    return json({reply,plan,theme,mood},200);
   } catch {
     return json({error:"AI isteği işlenemedi."},500);
   }
