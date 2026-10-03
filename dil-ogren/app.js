@@ -12,8 +12,21 @@ const S = {
 };
 
 function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || base(); }
-  catch { return base(); }
+  const defaults = base();
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (!raw || typeof raw !== "object") return defaults;
+    return {
+      ...defaults,
+      ...raw,
+      done: raw.done && typeof raw.done === "object" ? raw.done : {},
+      exam: raw.exam && typeof raw.exam === "object" ? raw.exam : {},
+      started: raw.started && typeof raw.started === "object" ? raw.started : {}
+    };
+  } catch {
+    localStorage.removeItem(KEY);
+    return defaults;
+  }
 }
 function base() {
   return { xp: 0, streak: 0, lastDay: null, dailyXp: 0, dailyDay: null, done: {}, exam: {}, started: {} };
@@ -56,6 +69,7 @@ function show(v){
   const el = $("v-"+v);
   if (el) el.classList.add("active");
   S.view = v;
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 function shuffle(a){
   a = a.slice();
@@ -223,7 +237,12 @@ function showPhrases(c){
 
 /* Flash */
 function startFlash(words){
-  S.flash = { list: shuffle(words.map(w => ({t:w[0], n:w[1]}))), i:0, known:0 };
+  const safeWords = Array.isArray(words) ? words.filter(w => Array.isArray(w) && w.length >= 2) : [];
+  if (!safeWords.length) {
+    result("⚠️", "Kart bulunamadı", "Bu etapta henüz kelime verisi yok.", 0);
+    return;
+  }
+  S.flash = { list: shuffle(safeWords.map(w => ({t:String(w[0]), n:String(w[1])}))), i:0, known:0 };
   paintFlash();
   show("flash");
 }
@@ -263,7 +282,8 @@ function collectAllPhrases(){
   return all;
 }
 function buildQuestions(wordPool, isExam){
-  const words = wordPool.length ? wordPool : collectAllWords();
+  const words = (wordPool.length ? wordPool : collectAllWords())
+    .filter(w => Array.isArray(w) && w.length >= 2 && w[0] && w[1]);
   const phrases = collectAllPhrases();
   const n = isExam ? 15 : Math.min(10, Math.max(4, words.length));
   const qs = [];
@@ -288,14 +308,20 @@ function buildQuestions(wordPool, isExam){
 }
 function pickOptions(correct, pool){
   let opts = [correct];
-  const p = shuffle(pool.filter(x => x && x !== correct));
+  const uniquePool = [...new Set((pool || []).filter(Boolean))];
+  const p = shuffle(uniquePool.filter(x => x !== correct));
   for (let i = 0; i < p.length && opts.length < 4; i++) opts.push(p[i]);
   // yetersizse doldur
   while (opts.length < 4) opts.push(correct + "·");
   return shuffle(opts).slice(0, 4);
 }
 function startQuiz(words, isExam){
-  const list = buildQuestions(words || [], isExam);
+  const safeWords = Array.isArray(words) ? words.filter(w => Array.isArray(w) && w.length >= 2) : [];
+  const list = buildQuestions(safeWords, isExam);
+  if (!list.length) {
+    result("⚠️", "Quiz açılamadı", "Bu dil için yeterli ders verisi bulunamadı.", 0);
+    return;
+  }
   S.quiz = { list, i:0, score:0, locked:false, exam: !!isExam };
   $("quizTitle").textContent = isExam ? "Genel Sınav" : "Quiz";
   paintQuiz();
@@ -438,7 +464,10 @@ function bind(){
     $("fFront").classList.toggle("hidden");
     $("fBack").classList.toggle("hidden");
   };
-  $("fAgain").onclick = () => { S.flash.i++; paintFlash(); };
+  $("fAgain").onclick = () => {
+    $("fFront").classList.remove("hidden");
+    $("fBack").classList.add("hidden");
+  };
   $("fKnow").onclick = () => { S.flash.known++; S.flash.i++; paintFlash(); };
   $("flashBack").onclick = () => openStage();
   $("quizBack").onclick = () => openStage();
@@ -457,11 +486,23 @@ function bind(){
 }
 
 function init(){
-  P = load();
-  ensureDaily();
-  paintHomeStats();
-  renderLangList();
-  bind();
-  show("home");
+  try {
+    P = load();
+    ensureDaily();
+    paintHomeStats();
+    renderLangList();
+    bind();
+    show("home");
+  } catch (err) {
+    console.error("DilYol başlatma hatası:", err);
+    document.body.innerHTML = `
+      <main style="min-height:100vh;display:grid;place-items:center;padding:24px;background:#070b14;color:#eef3ff;font-family:system-ui,sans-serif">
+        <section style="max-width:520px;padding:28px;border:1px solid #243049;border-radius:20px;background:#141c2e">
+          <h1 style="margin:0 0 10px">DilYol açılamadı</h1>
+          <p style="color:#8b9bb8;line-height:1.5">Uygulama verilerinde bir sorun oluştu. Sayfayı yenile. Düzelmezse site verilerini temizleyip tekrar aç.</p>
+          <button onclick="localStorage.removeItem('dilyol_v2');location.reload()" style="margin-top:16px;padding:12px 16px;border:0;border-radius:12px;cursor:pointer">Verileri sıfırla ve yenile</button>
+        </section>
+      </main>`;
+  }
 }
 document.addEventListener("DOMContentLoaded", init);
