@@ -198,10 +198,12 @@ function openPath(){
 
 function openStage(){
   const st = STAGE_NAMES.find(s => s.id === S.stageId);
+  document.documentElement.dataset.aiTheme=P.theme||"default";
   const content = getLangContent(S.langId)[S.stageId];
   if (!st || !content) return;
   $("stageTitle").textContent = st.title;
-  $("stageHero").innerHTML = `<h3>${st.title}</h3><p>${st.desc}</p><p style="margin-top:8px">${content.lesson||""}</p>`;
+  const plan=getStagePlan();
+  $("stageHero").innerHTML = `<h3>${st.title}</h3><p>${st.desc}</p><p style="margin-top:8px">${content.lesson||""}</p>${plan?'<div class="ai-plan"><b>AI çalışma planın</b><span>'+escapeHtml(plan.focus||"Kişisel tekrar")+'</span><small>'+(plan.minutes||20)+' dk · '+(plan.reason||"İlerlemenize göre ayarlandı.")+'</small><ul>'+(Array.isArray(plan.steps)?plan.steps.slice(0,4).map(x=>'<li>'+escapeHtml(x)+'</li>').join(""):"")+'</ul></div>':""}`;
 
   const acts = [
     { id:"words", ic:icon("book"), t:"Kelime listesi", s: content.words.length + " kelime" },
@@ -684,13 +686,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.DilYolFirebase.user) return;
     if (window.DilYolFirebase.progress) {
       const remote=window.DilYolFirebase.progress, defaults=base();
-      P={...defaults,...remote,done:remote.done&&typeof remote.done==="object"?remote.done:{},exam:remote.exam&&typeof remote.exam==="object"?remote.exam:{},started:remote.started&&typeof remote.started==="object"?remote.started:{},quizStats:remote.quizStats&&typeof remote.quizStats==="object"?remote.quizStats:{},achievements:remote.achievements&&typeof remote.achievements==="object"?remote.achievements:{}};
+      P={...defaults,...remote,done:remote.done&&typeof remote.done==="object"?remote.done:{},exam:remote.exam&&typeof remote.exam==="object"?remote.exam:{},started:remote.started&&typeof remote.started==="object"?remote.started:{},quizStats:remote.quizStats&&typeof remote.quizStats==="object"?remote.quizStats:{},achievements:remote.achievements&&typeof remote.achievements==="object"?remote.achievements:{},activities:remote.activities&&typeof remote.activities==="object"?remote.activities:{},plans:remote.plans&&typeof remote.plans==="object"?remote.plans:{},theme:typeof remote.theme==="string"?remote.theme:"default"};
       localStorage.setItem(KEY,JSON.stringify(P));
     } else {
       try { await window.DilYolFirebase.save(P); }
       catch(e) { console.warn("Firestore kayıt atlandı; yerel ilerleme kullanılacak:", e); }
     }
     $("authGate").classList.add("hidden");
+    document.documentElement.dataset.aiTheme=P.theme||"default";
     init();
   };
   if(window.DilYolFirebase && window.DilYolFirebase.ready) boot();
