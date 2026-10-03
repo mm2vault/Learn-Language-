@@ -9,6 +9,7 @@ export default async (req) => {
     const body = await req.json();
     const message = String(body.message || "").slice(0, 4000);
     const progress = body.progress || {};
+    const history = Array.isArray(body.history) ? body.history.slice(-10).filter(x => x && (x.role === "user" || x.role === "assistant") && x.content).map(x => ({role:x.role,content:String(x.content).slice(0,2000)})) : [];
     const model = Netlify.env.get("HF_MODEL") || "deepseek-ai/DeepSeek-V3-0324";
     const system = [
       "Sen DilYol adlı dil öğrenme uygulamasının AI öğretmenisin.",
@@ -27,6 +28,7 @@ export default async (req) => {
         model,
         messages:[
           {role:"system",content:system},
+          ...history,
           {role:"user",content:"İlerleme verisi:\n"+JSON.stringify(progress)+"\n\nKullanıcı isteği:\n"+message}
         ],
         max_tokens:500,
