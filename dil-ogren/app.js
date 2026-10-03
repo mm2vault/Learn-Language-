@@ -78,6 +78,20 @@ function shuffle(a){
 }
 function stageKey(lang, stage){ return lang + ":" + stage; }
 
+function renderDashboard(){
+  paintHomeStats();
+  const ids=Object.keys(P.started||{});
+  if(!S.langId) S.langId=ids[ids.length-1]||null;
+  const meta=LANG_META.find(x=>x.id===S.langId);
+  const next=STAGE_NAMES.find(s=>!P.done[stageKey(S.langId,s.id)])||STAGE_NAMES[0];
+  const pct=S.langId?Math.round(langProgress(S.langId)/STAGE_NAMES.length*100):0;
+  $("continueCard").innerHTML=meta ? "<button class='continue-inner' id='continueBtn' type='button'><span class='continue-flag'>"+meta.flag+"</span><span><b>Kaldığın yerden devam et</b><small>"+meta.name+" · "+next.title+" · %"+pct+"</small></span><strong>→</strong></button>" : "";
+  if($("continueBtn")) $("continueBtn").onclick=()=>{S.stageId=next.id;openStage();};
+  const qs=Object.values(P.quizStats||{});
+  const avg=qs.length?qs.reduce((a,v)=>a+(v.total?v.score/v.total:0),0)/qs.length:1;
+  $("aiRecTitle").textContent=avg<.75?"Önce zayıf konularını güçlendir":"Sıradaki ders: "+next.title;
+  $("aiRecText").textContent=meta?meta.name+" ilerlemeni kaydettik. Quiz sonuçlarına göre sonraki adımı belirleyeceğiz.":"Bir dil seç ve öğrenmeye başla.";
+}
 function paintHomeStats(){
   ensureDaily();
   $("hStreak").textContent = P.streak||0;
@@ -380,7 +394,7 @@ function finishQuiz(){
     save();
   }
   // Sınavda %70+, quizde %60+ etap sayılır
-  const passLine = S.quiz.exam ? 0.7 : 0.6;
+  P.quizStats=P.quizStats||{}; P.quizStats[stageKey(S.langId,S.stageId||"exam")]={score:s,total:t,at:Date.now()}; updateAchievements(); save();\n  const passLine = S.quiz.exam ? 0.7 : 0.6;
   if (ratio >= passLine) maybeCompleteStage();
   let title = S.quiz.exam ? "Sınav bitti" : "Quiz bitti";
   let extra = s + "/" + t + " doğru";
@@ -389,6 +403,7 @@ function finishQuiz(){
   result(emoji, title, extra, xp);
 }
 
+function updateAchievements(){const d=Object.keys(P.done||{}).length,q=Object.keys(P.quizStats||{}).length,defs=[["first","🌱","İlk ders","İlk etabı tamamla",d>=1],["xp100","⭐","100 XP","100 XP kazan",P.xp>=100],["quiz5","🧠","Quizci","5 quiz",q>=5],["streak7","🔥","7 günlük seri","7 gün seri",P.streak>=7],["lang2","🌍","Dil gezgini","2 dil",Object.keys(P.started||{}).length>=2]];defs.forEach(x=>{if(x[4])P.achievements[x[0]]=true;});return defs;}
 function maybeCompleteStage(){
   if (!S.langId || !S.stageId) return;
   P.done = P.done || {};
@@ -424,8 +439,8 @@ function openExams(){
   show("exams");
 }
 
-function openProfile(){
-  const langsStarted = Object.keys(P.started||{});
+function openAi(){$("aiModal").classList.remove("hidden");$("aiBody").innerHTML="<div class=\"ai-message bot\"><b>🤖 AI Öğretmen</b><p>"+$("aiRecText").textContent+"</p><small>XP: "+(P.xp||0)+" · Seri: "+(P.streak||0)+"</small></div>";} async function askAi(){const v=$("aiInput").value.trim();if(!v)return;$("aiInput").value="";try{const r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:v,progress:{lang:S.langId,xp:P.xp,streak:P.streak,done:P.done,quizStats:P.quizStats}})}),d=await r.json();if(!r.ok)throw Error();$("aiBody").insertAdjacentHTML("beforeend","<div class=\"ai-message bot\">"+String(d.reply||"Yanıt yok").replace(/\n/g,"<br>")+"</div>");}catch{$("aiBody").insertAdjacentHTML("beforeend","<div class=\"ai-message bot\">AI backend henüz bağlı değil. Tokeni güvenli ortam değişkenine ekleyince aktif olacak.</div>");}} function openProfile(){
+  const langsStarted = Object.keys(P.started||{}); updateAchievements();
   const stagesDone = Object.keys(P.done||{}).length;
   $("profileBody").innerHTML = `
     <div class="prof-card"><h3>Toplam XP</h3><p style="font-size:28px;font-weight:800;color:var(--blue)">${P.xp||0}</p></div>
@@ -457,7 +472,7 @@ function bind(){
       if (g === "path") openPath();
     });
   });
-  $("btnProfile").onclick = openProfile;
+  $("btnProfile").onclick = openProfile; $("aiOpen").onclick=openAi; $("aiClose").onclick=()=>$("aiModal").classList.add("hidden"); $("aiSend").onclick=askAi; $("aiInput").addEventListener("keydown",e=>{if(e.key==="Enter")askAi();});
   $("btnExamList").onclick = openExams;
 
   $("flashCard").onclick = () => {
@@ -492,6 +507,7 @@ function init(){
     paintHomeStats();
     renderLangList();
     bind();
+    renderDashboard();
     show("home");
   } catch (err) {
     console.error("DilYol başlatma hatası:", err);
