@@ -1,4 +1,4 @@
-// 55 dil — bölge + temel bilgi
+// 56 dil — bölge + temel bilgi
 const LANG_META = [
   { id:"en", name:"İngilizce", flag:"🇬🇧", region:"europe", speakers:"1.4B+" },
   { id:"de", name:"Almanca", flag:"🇩🇪", region:"europe", speakers:"130M+" },
