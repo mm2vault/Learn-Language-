@@ -73,7 +73,7 @@ export default {
         message
       ].join("\n");
 
-      const model = env.GEMINI_MODEL || "gemini-3.6-flash";
+      const model = env.GEMINI_MODEL || "gemini-2.5-flash";
       const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
       const response = await fetch(endpoint, {
         method:"POST",
